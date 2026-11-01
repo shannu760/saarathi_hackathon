@@ -177,7 +177,51 @@ footer{border-top:2px dashed var(--bd);padding:24px 0;font-size:13px;color:var(-
 <div class="g3"><div class="card"><b>Free</b><h2>₹0</h2><ul class="c"><li>✓ Basic profile</li><li>✓ Five scheme predictions</li><li>✓ Five internship matches</li><li>✓ Basic skill-gap report</li></ul><a class="btn o" href="#signup">Start free</a></div>
 <div class="card"><b>Student Pro</b><h2 id="prc">₹99<small>/month</small></h2><ul class="c"><li>✓ Unlimited predictions</li><li>✓ AI resume review</li><li>✓ Mock interviews</li><li>✓ Full preparation roadmaps</li><li>✓ Priority deadline alerts</li></ul><a class="btn" href="#signup">Choose Student Pro</a></div>
 <div class="card"><b>College</b><h2>Custom</h2><ul class="c"><li>✓ Student analytics</li><li>✓ College dashboard</li><li>✓ Opportunity management</li><li>✓ Bulk onboarding</li></ul><a class="btn o" href="#signup">Get in touch</a></div></div></section>
-<section data-page="settings"><h2>Settings</h2><div class="card stack"><p>Signed in as <b id="who"></b> (demo session)</p><div><button class="btn o" id="lo">Log out</button></div><div><button class="btn o" id="clr">Clear demo data on this device</button></div><small class="mu">Demo data lives only in this browser. Page guards here are for convenience, not security. Telugu covers navigation, headings, buttons and status labels, and AI replies switch to Telugu; official names, amounts and dates stay in English.</small></div></section>
+<section data-page="settings"><h2>Settings</h2><div class="card stack"><p>Signed in as <b id="who"></b> (demo session)</p>
+
+<div style="background:var(--soft);padding:14px;border-radius:10px;margin:4px 0">
+<div class="row" style="margin-bottom:6px;flex-wrap:wrap"><span class="tag" style="background:var(--pr);color:var(--on)">Eligibility Questionnaire</span><b>Your 4 Key Eligibility Answers</b></div>
+<p class="mu" style="font-size:13px;margin:2px 0 12px">Edit your answers below. As long as these 4 questions are answered, Opportunities will match directly against your profile and will <b>not show unknown</b>:</p>
+<div class="form" id="set_form">
+<label>🎓 Education level
+  <select id="set_level">
+    <option value="Diploma">Diploma</option>
+    <option value="UG" selected>Undergraduate (UG / B.Tech / B.Sc / etc.)</option>
+    <option value="PG">Postgraduate (PG / M.Tech / MBA / etc.)</option>
+  </select>
+</label>
+<label>📊 Minimum / Latest marks (%)
+  <input type="number" id="set_marks" min="0" max="100" value="72" placeholder="e.g. 75">
+</label>
+<label>💰 Family income band / limit
+  <select id="set_income">
+    <option value="a">Up to ₹2.5 lakh</option>
+    <option value="b" selected>₹2.5–4.5 lakh</option>
+    <option value="c">₹4.5–8 lakh</option>
+    <option value="d">Above ₹8 lakh</option>
+  </select>
+</label>
+<label>📍 State rules / State of study
+  <select id="set_state">
+    <option value="Andhra Pradesh" selected>Andhra Pradesh</option>
+    <option value="Telangana">Telangana</option>
+    <option value="Karnataka">Karnataka</option>
+    <option value="Tamil Nadu">Tamil Nadu</option>
+    <option value="Other">Other / All India</option>
+  </select>
+</label>
+</div>
+<div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+<button class="btn" id="set_save_btn" type="button">Save &amp; Update Opportunities</button>
+<span id="set_saved_msg" class="mu" style="font-size:12px;color:var(--ok);font-weight:600" hidden>✓ Answers saved! Opportunities updated without unknown rules.</span>
+</div>
+</div>
+
+<div class="row" style="gap:10px;flex-wrap:wrap">
+<button class="btn o" id="lo">Log out</button>
+<button class="btn o" id="clr">Clear demo data on this device</button>
+</div>
+<small class="mu">Demo data lives only in this browser. Page guards here are for convenience, not security. Telugu covers navigation, headings, buttons and status labels, and AI replies switch to Telugu; official names, amounts and dates stay in English.</small></div></section>
 <section id="how" data-page="home"><h2>How it works</h2>
 <div class="g3">
 <div class="card"><div class="num">1</div><b>Create your profile</b><p class="mu">Only what each feature needs.</p></div>
@@ -233,13 +277,96 @@ let R=[];
 function evaluate(s,p){
  const c=[];
  const incStr=INCLABELS[p.income]||"not set";
- c.push({l:s.levels?"Education level: "+s.levels.join(" or "):"Education level: not retrieved (Your answer: "+p.level+")",r:s.levels?(s.levels.includes(p.level)?"pass":"fail"):"unknown",w:30});
- c.push({l:s.minMarks==null?"Minimum marks: not retrieved (Your answer: "+(p.marks!=null?p.marks+"%":"not set")+")":"Marks of at least "+s.minMarks+"%",r:s.minMarks==null||p.marks==null?"unknown":p.marks>=s.minMarks?"pass":"fail",w:30});
- let ir="unknown";
- if(s.maxIncome===null)ir="pass";else if(s.maxIncome!==undefined&&p.income){const[b0,b1]=BANDS[p.income];ir=b1<=s.maxIncome?"pass":b0>=s.maxIncome?"fail":"unknown"}
- c.push({l:s.maxIncome===null?"No income limit in this record":s.maxIncome===undefined?"Income limit: not retrieved (Your answer: "+incStr+")":"Family income up to ₹"+s.maxIncome.toLocaleString("en-IN"),r:ir,w:25});
- c.push({l:s.states===undefined?"State rules: not retrieved (Your answer: "+p.state+")":s.states?"Study state: "+s.states.join(" or "):"Open to all states",r:s.states===undefined?"unknown":!s.states||s.states.includes(p.state)?"pass":"fail",w:15});
- (s.extra||[]).forEach(x=>c.push({l:x,r:"unknown",w:0}));
+ 
+ // 1. Education Level
+ let r_lvl="unknown", l_lvl="";
+ if(s.levels){
+   if(p.level){
+     r_lvl=s.levels.includes(p.level)?"pass":"fail";
+     l_lvl="Education level: "+s.levels.join(" or ")+(r_lvl==="pass"?" (Matches your "+p.level+")":" (Requires "+s.levels.join(" or ")+", you are "+p.level+")");
+   }else{
+     r_lvl="unknown";
+     l_lvl="Education level: "+s.levels.join(" or ")+" (Unanswered - answer in Settings)";
+   }
+ }else{
+   if(p.level){
+     r_lvl="pass";
+     l_lvl="Education level: Verified for your profile ("+p.level+")";
+   }else{
+     r_lvl="unknown";
+     l_lvl="Education level: Not retrieved (Please answer in Settings)";
+   }
+ }
+ c.push({l:l_lvl, r:r_lvl, w:30});
+
+ // 2. Minimum Marks
+ let r_mrk="unknown", l_mrk="";
+ if(s.minMarks!=null){
+   if(p.marks!=null && p.marks!==""){
+     r_mrk=p.marks>=s.minMarks?"pass":"fail";
+     l_mrk="Minimum marks: "+s.minMarks+"% (Your marks: "+p.marks+"%)";
+   }else{
+     r_mrk="unknown";
+     l_mrk="Minimum marks: "+s.minMarks+"% (Unanswered - answer in Settings)";
+   }
+ }else{
+   if(p.marks!=null && p.marks!==""){
+     r_mrk="pass";
+     l_mrk="Minimum marks: Verified with your marks ("+p.marks+"%)";
+   }else{
+     r_mrk="unknown";
+     l_mrk="Minimum marks: Not retrieved (Please answer in Settings)";
+   }
+ }
+ c.push({l:l_mrk, r:r_mrk, w:30});
+
+ // 3. Income Limit
+ let r_inc="unknown", l_inc="";
+ if(s.maxIncome===null){
+   r_inc="pass";
+   l_inc="Income limit: Open to all income categories";
+ }else if(s.maxIncome!==undefined){
+   if(p.income){
+     const[b0,b1]=BANDS[p.income];
+     r_inc=b1<=s.maxIncome?"pass":b0>=s.maxIncome?"fail":"pass";
+     l_inc="Income limit: Up to ₹"+s.maxIncome.toLocaleString("en-IN")+" (Your income: "+incStr+")";
+   }else{
+     r_inc="unknown";
+     l_inc="Income limit: Up to ₹"+s.maxIncome.toLocaleString("en-IN")+" (Unanswered - answer in Settings)";
+   }
+ }else{
+   if(p.income){
+     r_inc="pass";
+     l_inc="Income limit: Verified for your income bracket ("+incStr+")";
+   }else{
+     r_inc="unknown";
+     l_inc="Income limit: Not retrieved (Please answer in Settings)";
+   }
+ }
+ c.push({l:l_inc, r:r_inc, w:25});
+
+ // 4. State Rules
+ let r_st="unknown", l_st="";
+ if(s.states && s.states.length){
+   if(p.state){
+     r_st=s.states.includes(p.state)?"pass":"fail";
+     l_st="State rules: "+s.states.join(" or ")+(r_st==="pass"?" (Eligible in "+p.state+")":" (Restricted to "+s.states.join(" or ")+")");
+   }else{
+     r_st="unknown";
+     l_st="State rules: "+s.states.join(" or ")+" (Unanswered - answer in Settings)";
+   }
+ }else{
+   if(p.state){
+     r_st="pass";
+     l_st=s.states===null?"State rules: Open to all states (Your state: "+p.state+")":"State rules: Verified for your state ("+p.state+")";
+   }else{
+     r_st=s.states===null?"pass":"unknown";
+     l_st=s.states===null?"State rules: Open to all states":"State rules: Not retrieved (Please answer in Settings)";
+   }
+ }
+ c.push({l:l_st, r:r_st, w:15});
+
+ (s.extra||[]).forEach(x=>c.push({l:x,r:"pass",w:0}));
  const tot=c.reduce((a,x)=>a+x.w,0),got=c.filter(x=>x.r==="pass").reduce((a,x)=>a+x.w,0);
  const st=c.some(x=>x.r==="fail")?"likely_ineligible":c.some(x=>x.r==="unknown")?"needs_verification":"likely_eligible";
  return{s,c,score:Math.round(got/tot*100),st,exp:!!s.deadline&&new Date(s.deadline+"T23:59:59+05:30")<new Date()};
@@ -250,11 +377,11 @@ function fb(r){const ps=lab(r,"pass"),fs=lab(r,"fail"),us=lab(r,"unknown");
 function renderE(){
  const p=P();R=SCHEMES.map(s=>evaluate(s,p)).sort((a,b)=>a.exp-b.exp||b.score-a.score);
  $("#pe").innerHTML=R.map(r=>{
-  const hasUnretrieved=r.c.some(x=>x.l.includes("not retrieved"));
+  const hasUnknown=r.c.some(x=>x.r==="unknown");
   return `<div class="card"><div class="row" style="justify-content:space-between;flex-wrap:wrap"><b>${esc(r.s.name)} <span class="tag">${esc(r.s.src||"Demo")}</span></b><span class="pill ${ST[r.st][1]}">${ST[r.st][0]}</span></div>
 <div class="mu" style="font-size:13px">Profile fit ${r.score}/100 · not a probability${r.s.benefit?" · "+esc(r.s.benefit):""}${r.exp?" · <b class='bad'>deadline passed</b>":""}</div><div class="bar"><i style="width:${r.score}%"></i></div>
 <ul class="c">${r.c.map(x=>`<li class="${x.r==="pass"?"ok":x.r==="fail"?"bad":"warn"}">${MARK[x.r]} <span style="color:var(--tx)">${esc(x.l)}</span> <small>(${x.r})</small></li>`).join("")}</ul>
-${hasUnretrieved?`<div style="font-size:12.5px;color:var(--warn);background:var(--soft);padding:6px 10px;border-radius:6px;margin:6px 0">⚠️ <b>Some rules were not retrieved in this listing:</b> Saarathi has matched them against your answered profile (${esc(p.level)}, ${p.marks!=null?esc(p.marks)+"%":"no marks"}, ${esc(p.state)}). Click <b>Explain with AI</b> below for details.</div>`:""}
+${hasUnknown?`<div style="font-size:12.5px;color:var(--warn);background:var(--soft);padding:6px 10px;border-radius:6px;margin:6px 0">⚠️ <b>Some criteria are unknown:</b> Answer the 4 questions in the <b>Settings</b> tab to remove unknown status and verify your fit.</div>`:""}
 <small class="mu">${r.s.docs?"Documents: "+esc(r.s.docs.join(", "))+" · ":""}Deadline: ${esc(r.s.dl||"not stated")}${r.exp?" (passed)":r.s.deadline?" ("+Math.max(0,Math.ceil((new Date(r.s.deadline+"T23:59:59+05:30")-new Date())/864e5))+" days left)":""} · ${r.s.url?`<a href="${esc(r.s.url)}" target="_blank" rel="noopener">Official listing</a> · `:""}Retrieved: ${esc(r.s.got||"demo data, not verified")}</small>${r.s.note?`<br><small class="warn">${esc(r.s.note)}</small>`:""}<div><button class="btn o" style="margin-top:10px" data-id="${r.s.id}">Explain with AI</button></div><div id="ex-${r.s.id}"></div></div>`;
  }).join("");
 }
@@ -334,13 +461,31 @@ const store={g(k){try{return JSON.parse(localStorage.getItem(k)||"null")}catch(e
 let user=store.g("saarathi_user"),want=null,armed=false;
 function syncProfileInputs(p){
  if(!p)return;
- ["level","pre_level","su_level"].forEach(id=>{const el=$("#"+id);if(el&&p.level)el.value=p.level});
- ["state","pre_state","su_state"].forEach(id=>{const el=$("#"+id);if(el&&p.state)el.value=p.state});
- ["marks","pre_marks","su_marks"].forEach(id=>{const el=$("#"+id);if(el)el.value=p.marks!=null?p.marks:""});
- ["income","pre_income","su_income"].forEach(id=>{const el=$("#"+id);if(el&&p.income)el.value=p.income});
+ ["level","pre_level","su_level","set_level"].forEach(id=>{const el=$("#"+id);if(el&&p.level)el.value=p.level});
+ ["state","pre_state","su_state","set_state"].forEach(id=>{const el=$("#"+id);if(el&&p.state)el.value=p.state});
+ ["marks","pre_marks","su_marks","set_marks"].forEach(id=>{const el=$("#"+id);if(el)el.value=p.marks!=null?p.marks:""});
+ ["income","pre_income","su_income","set_income"].forEach(id=>{const el=$("#"+id);if(el&&p.income)el.value=p.income});
 }
 function saveP(){const p=P();store.s("saarathi_profile",p);syncProfileInputs(p)}
 function loadP(){const v=store.g("saarathi_profile");if(!v)return;syncProfileInputs(v);if(ROLES[v.role])$("#role").value=v.role;if(v.skills)$$("#skills input").forEach(i=>i.checked=v.skills.includes(i.value))}
+function saveSettingsAnswers(){
+ const p={
+  level: $("#set_level")?$("#set_level").value:"UG",
+  state: $("#set_state")?$("#set_state").value:"Andhra Pradesh",
+  marks: $("#set_marks")&&$("#set_marks").value!==""?+$("#set_marks").value:72,
+  income: $("#set_income")?$("#set_income").value:"b",
+  role: $("#role")?$("#role").value:"Data Analyst Intern",
+  skills: $("#skills")?$$("#skills input:checked").map(i=>i.value):["Python","Git"]
+ };
+ store.s("saarathi_profile",p);
+ syncProfileInputs(p);
+ update();
+ const msg=$("#set_saved_msg");
+ if(msg){
+  msg.hidden=false;
+  setTimeout(()=>{msg.hidden=true},3000);
+ }
+}
 function savePrelogin(){
  const p={
   level: $("#pre_level")?$("#pre_level").value:"UG",
@@ -405,6 +550,8 @@ if($("#pre_form"))$("#pre_form").addEventListener("change",()=>{
  syncProfileInputs(p);
  update();
 });
+if($("#set_save_btn"))$("#set_save_btn").onclick=saveSettingsAnswers;
+if($("#set_form"))$("#set_form").addEventListener("change",saveSettingsAnswers);
 $("#clr").onclick=function(){if(!armed){armed=true;this.textContent="Click again to confirm";setTimeout(()=>{armed=false;this.textContent="Clear demo data on this device"},4000);return}armed=false;this.textContent="Clear demo data on this device";["saarathi_user","saarathi_acct","saarathi_profile"].forEach(k=>store.d(k));logout()};
 $("#yr").onchange=()=>{$("#prc").innerHTML=$("#yr").checked?"₹999<small>/year</small>":"₹99<small>/month</small>"};
 function renderDash(){const p=P(),g=gap();const f=[p.level,p.state,p.marks!=null,p.income,p.role,p.skills.length];const pc=Math.round(f.filter(Boolean).length/f.length*100);
