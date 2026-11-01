@@ -1,0 +1,8 @@
+{
+  "name": "saarathi",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Saarathi: an AI student companion for scholarships, internships and skills.",
+  "engines": { "node": ">=18" },
+  "scripts": { "dev": "vercel dev" }
+}
